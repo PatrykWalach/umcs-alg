@@ -13,17 +13,17 @@ class TuringMachineTest {
         endStates.add("done");
 
         TuringMachine binaryDecrement = new TuringMachine("q1", "_", input, endStates);
-        binaryDecrement.addTransition("q1", "0", "0", "q1", TuringMachine.Direction.right);
-        binaryDecrement.addTransition("q1", "1", "1", "q1", TuringMachine.Direction.right);
-        binaryDecrement.addTransition("q1", "_", "_", "q2", TuringMachine.Direction.left);
+        binaryDecrement.addTransition("q1", '0', '0', "q1", TuringMachine.Direction.right);
+        binaryDecrement.addTransition("q1", '1', '1', "q1", TuringMachine.Direction.right);
+        binaryDecrement.addTransition("q1", '_', '_', "q2", TuringMachine.Direction.left);
 
-        binaryDecrement.addTransition("q2", "0", "0", "q2", TuringMachine.Direction.left);
-        binaryDecrement.addTransition("q2", "1", "0", "q3", TuringMachine.Direction.right);
-        binaryDecrement.addTransition("q2", "_", "_", "done", TuringMachine.Direction.left);
+        binaryDecrement.addTransition("q2", '0', '0', "q2", TuringMachine.Direction.left);
+        binaryDecrement.addTransition("q2", '1', '0', "q3", TuringMachine.Direction.right);
+        binaryDecrement.addTransition("q2", '_', '_', "done", TuringMachine.Direction.left);
 
-        binaryDecrement.addTransition("q3", "0", "1", "q3", TuringMachine.Direction.right);
-        binaryDecrement.addTransition("q3", "1", "1", "done", TuringMachine.Direction.left);
-        binaryDecrement.addTransition("q3", "_", "_", "done", TuringMachine.Direction.left);
+        binaryDecrement.addTransition("q3", '0', '1', "q3", TuringMachine.Direction.right);
+        binaryDecrement.addTransition("q3", '1', '1', "done", TuringMachine.Direction.left);
+        binaryDecrement.addTransition("q3", '_', '_', "done", TuringMachine.Direction.left);
 
         return binaryDecrement;
     }
@@ -34,25 +34,25 @@ class TuringMachineTest {
         endStates.add("no");
 
         TuringMachine sameAmountOfZerosAndOnes = new TuringMachine("q1", "_", input, endStates);
-        sameAmountOfZerosAndOnes.addTransition("q1", "0", "_", "q3", TuringMachine.Direction.right);
-        sameAmountOfZerosAndOnes.addTransition("q1", "#", TuringMachine.Direction.right);
-        sameAmountOfZerosAndOnes.addTransition("q1", "_", "_", "yes", TuringMachine.Direction.left);
-        sameAmountOfZerosAndOnes.addTransition("q1", "1", "_", "q2", TuringMachine.Direction.right);
+        sameAmountOfZerosAndOnes.addTransition("q1", '0', '_', "q3", TuringMachine.Direction.right);
+        sameAmountOfZerosAndOnes.addTransition("q1", '#', TuringMachine.Direction.right);
+        sameAmountOfZerosAndOnes.addTransition("q1", '_', '_', "yes", TuringMachine.Direction.left);
+        sameAmountOfZerosAndOnes.addTransition("q1", '1', '_', "q2", TuringMachine.Direction.right);
 
-        sameAmountOfZerosAndOnes.addTransition("q2", "#", TuringMachine.Direction.right);
-        sameAmountOfZerosAndOnes.addTransition("q2", "1", TuringMachine.Direction.right);
-        sameAmountOfZerosAndOnes.addTransition("q2", "0", "#", "q4", TuringMachine.Direction.left);
-        sameAmountOfZerosAndOnes.addTransition("q2", "_", "_", "no", TuringMachine.Direction.left);
+        sameAmountOfZerosAndOnes.addTransition("q2", '#', TuringMachine.Direction.right);
+        sameAmountOfZerosAndOnes.addTransition("q2", '1', TuringMachine.Direction.right);
+        sameAmountOfZerosAndOnes.addTransition("q2", '0', '#', "q4", TuringMachine.Direction.left);
+        sameAmountOfZerosAndOnes.addTransition("q2", '_', '_', "no", TuringMachine.Direction.left);
 
-        sameAmountOfZerosAndOnes.addTransition("q3", "#", TuringMachine.Direction.right);
-        sameAmountOfZerosAndOnes.addTransition("q3", "0", TuringMachine.Direction.right);
-        sameAmountOfZerosAndOnes.addTransition("q3", "1", "#", "q4", TuringMachine.Direction.left);
-        sameAmountOfZerosAndOnes.addTransition("q3", "_", "_", "no", TuringMachine.Direction.left);
+        sameAmountOfZerosAndOnes.addTransition("q3", '#', TuringMachine.Direction.right);
+        sameAmountOfZerosAndOnes.addTransition("q3", '0', TuringMachine.Direction.right);
+        sameAmountOfZerosAndOnes.addTransition("q3", '1', '#', "q4", TuringMachine.Direction.left);
+        sameAmountOfZerosAndOnes.addTransition("q3", '_', '_', "no", TuringMachine.Direction.left);
 
-        sameAmountOfZerosAndOnes.addTransition("q4", "#", TuringMachine.Direction.left);
-        sameAmountOfZerosAndOnes.addTransition("q4", "0", TuringMachine.Direction.left);
-        sameAmountOfZerosAndOnes.addTransition("q4", "1", TuringMachine.Direction.left);
-        sameAmountOfZerosAndOnes.addTransition("q4", "_", "_", "q1", TuringMachine.Direction.right);
+        sameAmountOfZerosAndOnes.addTransition("q4", '#', TuringMachine.Direction.left);
+        sameAmountOfZerosAndOnes.addTransition("q4", '0', TuringMachine.Direction.left);
+        sameAmountOfZerosAndOnes.addTransition("q4", '1', TuringMachine.Direction.left);
+        sameAmountOfZerosAndOnes.addTransition("q4", '_', '_', "q1", TuringMachine.Direction.right);
 
         return sameAmountOfZerosAndOnes;
     }
@@ -87,7 +87,7 @@ class TuringMachineTest {
     public void throwsInfiniteTransitionException() {
         Assertions.assertThrows(InfiniteTransitionException.class, () -> {
             TuringMachine machine = new TuringMachine("q0", "_", "_", new String[]{"qk"});
-            machine.addTransition("q0", "_", TuringMachine.Direction.stay);
+            machine.addTransition("q0", '_', TuringMachine.Direction.stay);
 
             while (!machine.isDone()) {
                 machine.next();

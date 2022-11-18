@@ -1,12 +1,11 @@
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 
 public class TuringMachine {
-    private final LinkedList<String> tape = new LinkedList<>();
+    private final StringBuilder tape = new StringBuilder();
     private final String blank;
     private final Set<String> endStates;
     private final HashMap<String, State> states = new HashMap<>();
@@ -23,14 +22,9 @@ public class TuringMachine {
         this.blank = blank;
         this.endStates = endStates;
         endStates.forEach((s) -> states.put(s, new State()));
-        ((Arrays.stream(input.split("")).map(s -> {
-            if (s.isEmpty()) {
-                return blank;
-            }
-            return s;
 
-        }))).forEach(tape::add);
-
+        tape.append(input);
+        tape.append(blank);
 
     }
 
@@ -42,12 +36,12 @@ public class TuringMachine {
         return state;
     }
 
-    public void addTransition(String state, String value, String nextValue, String nextState, Direction direction) throws InfiniteTransitionException {
+    public void addTransition(String state, char value, char nextValue, String nextState, Direction direction) throws InfiniteTransitionException {
 
         states.put(state, states.getOrDefault(state, new State()).addTransition(value, nextValue, nextState, direction));
     }
 
-    public void addTransition(String state, String value, Direction direction) throws InfiniteTransitionException {
+    public void addTransition(String state, char value, Direction direction) throws InfiniteTransitionException {
         addTransition(state, value, value, state, direction);
     }
 
@@ -56,7 +50,8 @@ public class TuringMachine {
     }
 
     public void next() {
-        String value = tape.get(position);
+        char value = tape.charAt(position);
+
 
         if (isDone()) {
             return;
@@ -72,23 +67,23 @@ public class TuringMachine {
 
         Transition transition = gotState.getTransition(value);
 
-
-        tape.set(position, transition.getNextValue());
+        tape.setCharAt(position, transition.getNextValue());
         state = transition.getNextState();
 
         switch (transition.getDirection()) {
             case right:
                 position++;
 
-                if (tape.size() <= position) {
-                    tape.add(blank);
+                if (tape.length() <= position) {
+                    tape.append(blank);
                 }
 
                 break;
 
             case left:
                 if (position <= 0) {
-                    tape.add(0, blank);
+
+                    tape.insert(0, blank);
                     break;
                 }
                 position--;
@@ -113,17 +108,17 @@ public class TuringMachine {
     }
 
     private static class Transition {
-        private final String nextValue;
+        private final char nextValue;
         private final String nextState;
         private final Direction direction;
 
-        public Transition(String nextValue, String nextState, Direction direction) {
+        public Transition(char nextValue, String nextState, Direction direction) {
             this.nextValue = nextValue;
             this.nextState = nextState;
             this.direction = direction;
         }
 
-        public String getNextValue() {
+        public char getNextValue() {
             return nextValue;
         }
 
@@ -137,15 +132,15 @@ public class TuringMachine {
     }
 
     private static class State {
-        private final HashMap<String, Transition> transitions = new HashMap<>();
+        private final HashMap<Character, Transition> transitions = new HashMap<>();
 
 
-        public Transition getTransition(String value) {
+        public Transition getTransition(char value) {
             return transitions.get(value);
         }
 
-        public State addTransition(String value, String nextValue, String nextState, Direction direction) throws InfiniteTransitionException {
-            if (value.equals(nextValue) && direction.equals(Direction.stay)) {
+        public State addTransition(char value, char nextValue, String nextState, Direction direction) throws InfiniteTransitionException {
+            if (value == (nextValue) && direction.equals(Direction.stay)) {
                 throw new InfiniteTransitionException();
             }
             transitions.put(value, new Transition(nextValue, nextState, direction));

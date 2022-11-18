@@ -1,6 +1,8 @@
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
-
 
 public class Main {
 
@@ -39,11 +41,12 @@ public class Main {
         }
 
 
-        private double angle(Point2D p) {
+        private double angle(@NotNull Point2D p) {
             return Math.atan2(p.getY(), p.getX());
         }
 
-        private Point2D sub(Point2D p, Point2D q) {
+        @Contract("_, _ -> new")
+        private @NotNull Point2D sub(@NotNull Point2D p, @NotNull Point2D q) {
             return new Point2D.Double(p.getX() - q.getX(), p.getY() - q.getY());
         }
 

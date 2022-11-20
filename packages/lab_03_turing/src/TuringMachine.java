@@ -4,44 +4,44 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 
-public class TuringMachine {
+public class TuringMachine<T> {
     private final StringBuilder tape = new StringBuilder();
-    private final String blank;
-    private final Set<String> endStates;
-    private final HashMap<String, State> states = new HashMap<>();
+    private final char blank;
+    private final Set<T> endStates;
+    private final HashMap<T, State<T>> states = new HashMap<>();
+
     private int position = 0;
-    private String state;
+    private T state;
 
-
-    public TuringMachine(String state, String blank, String input, String[] endStates) {
+    public TuringMachine(T state, char blank, String input, T[] endStates) {
         this(state, blank, input, Arrays.stream(endStates).collect(Collectors.toSet()));
     }
 
-    public TuringMachine(String state, String blank, String input, Set<String> endStates) {
+    public TuringMachine(T state, char blank, String input, Set<T> endStates) {
         this.state = state;
         this.blank = blank;
         this.endStates = endStates;
-        endStates.forEach((s) -> states.put(s, new State()));
+        endStates.forEach((s) -> states.put(s, new State<>()));
 
         tape.append(input);
         tape.append(blank);
 
     }
 
-    public Set<String> getStates() {
+    public Set<T> getStates() {
         return states.keySet();
     }
 
-    public String getState() {
+    public T getState() {
         return state;
     }
 
-    public void addTransition(String state, char value, char nextValue, String nextState, Direction direction) throws InfiniteTransitionException {
+    public void addTransition(T state, char value, char nextValue, T nextState, Direction direction) {
 
-        states.put(state, states.getOrDefault(state, new State()).addTransition(value, nextValue, nextState, direction));
+        states.put(state, states.getOrDefault(state, new State<>()).addTransition(value, nextValue, nextState, direction));
     }
 
-    public void addTransition(String state, char value, Direction direction) throws InfiniteTransitionException {
+    public void addTransition(T state, char value, Direction direction) {
         addTransition(state, value, value, state, direction);
     }
 
@@ -49,7 +49,10 @@ public class TuringMachine {
         return endStates.contains(state);
     }
 
+
     public void next() {
+
+
         char value = tape.charAt(position);
 
 
@@ -58,14 +61,14 @@ public class TuringMachine {
         }
 
 
-        State gotState = states.get(state);
+        State<T> gotState = states.get(state);
 
         if (gotState == null) {
             throw new RuntimeException("State \"" + state + "\" not implemented");
 
         }
 
-        Transition transition = gotState.getTransition(value);
+        Transition<T> transition = gotState.getTransition(value);
 
         tape.setCharAt(position, transition.getNextValue());
         state = transition.getNextState();
@@ -74,11 +77,13 @@ public class TuringMachine {
             case right:
                 position++;
 
-                if (tape.length() <= position) {
-                    tape.append(blank);
+                if (tape.length() > position) {
+                    break;
                 }
 
-                break;
+
+                tape.append(blank);
+
 
             case left:
                 if (position <= 0) {
@@ -94,7 +99,7 @@ public class TuringMachine {
     }
 
     public String getTape() {
-        return String.join("", tape);
+        return tape.toString();
     }
 
     public int getPosition() {
@@ -107,12 +112,13 @@ public class TuringMachine {
         stay
     }
 
-    private static class Transition {
+
+    private static class Transition<T> {
         private final char nextValue;
-        private final String nextState;
+        private final T nextState;
         private final Direction direction;
 
-        public Transition(char nextValue, String nextState, Direction direction) {
+        public Transition(char nextValue, T nextState, Direction direction) {
             this.nextValue = nextValue;
             this.nextState = nextState;
             this.direction = direction;
@@ -122,7 +128,7 @@ public class TuringMachine {
             return nextValue;
         }
 
-        public String getNextState() {
+        public T getNextState() {
             return nextState;
         }
 
@@ -131,19 +137,17 @@ public class TuringMachine {
         }
     }
 
-    private static class State {
-        private final HashMap<Character, Transition> transitions = new HashMap<>();
+    private static class State<T> {
+        private final HashMap<Character, Transition<T>> transitions = new HashMap<>();
 
 
-        public Transition getTransition(char value) {
+        public Transition<T> getTransition(char value) {
             return transitions.get(value);
         }
 
-        public State addTransition(char value, char nextValue, String nextState, Direction direction) throws InfiniteTransitionException {
-            if (value == (nextValue) && direction.equals(Direction.stay)) {
-                throw new InfiniteTransitionException();
-            }
-            transitions.put(value, new Transition(nextValue, nextState, direction));
+        public State<T> addTransition(char value, char nextValue, T nextState, Direction direction) {
+
+            transitions.put(value, new Transition<>(nextValue, nextState, direction));
             return this;
         }
     }

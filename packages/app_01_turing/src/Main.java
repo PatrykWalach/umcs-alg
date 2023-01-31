@@ -1,3 +1,4 @@
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -9,32 +10,58 @@ import java.util.stream.IntStream;
 
 public class Main {
 
+    static final String IN = "./src/decrement";
+    static final String OUT = IN + ".out";
+    static final int SLEEP = 500;
+
     public static void main(String[] args) throws InterruptedException, IOException {
 
+
         Config config = new Config();
-        new ConfigDirector(config).buildConfig(String.join("\n", Files.readAllLines(Paths.get("./src/config"))));
+        new ConfigDirector(config).buildConfig(String.join("\n", Files.readAllLines(Paths.get(IN))));
 
 
-        TuringMachine<String> machine = new TuringMachine<String>(config.getStartState(), config.getAlphabet().get(config.getAlphabet().size() - 1), config.getInput(), new HashSet<>(config.getEndStates()));
+        TuringMachine<String> machine = new TuringMachine<>(config.getStartState(), config.getAlphabet().get(config.getAlphabet().size() - 1), config.getInput(), new HashSet<>(config.getEndStates()));
 
 
-        config.getInstructions().forEach((i) -> {
-            machine.addTransition(i.getState(), i.getValue(), i.getNextValue(), i.getNextState(), i.getDirection());
-        });
+        config.getInstructions().forEach((i) -> machine.addTransition(i.getState(), i.getValue(), i.getNextValue(), i.getNextState(), i.getDirection()));
+
+        StringBuilder states = new StringBuilder();
+
 
         while (!machine.isDone()) {
             printTape(machine);
+            String formatted = formatState(machine);
+            states.append(formatted).append(machine.getTape()).append("\n");
+            states.append(stringOf(formatted.length() + machine.getPosition(), " ")).append("^").append("\n");
             machine.next();
         }
 
         printTape(machine, 1, 0);
+
+        try (FileWriter f = new FileWriter(OUT)) {
+            f.write(config.getDescription());
+            f.write("\n");
+            f.write("\n");
+            f.write(states.toString());
+            f.write("\n");
+            f.write("<--KONIEC-->");
+            f.write("\n");
+            f.write("\n");
+            String formatted = formatState(machine);
+            f.write(formatted);
+            f.write(machine.getTape());
+            f.write("\n");
+            f.write(stringOf(formatted.length() + machine.getPosition(), " "));
+            f.write("^");
+        }
     }
 
-    public static void printTape(TuringMachine machine) throws InterruptedException {
-        printTape(machine, 2, 500);
+    public static void printTape(TuringMachine<String> machine) throws InterruptedException {
+        printTape(machine, 2, SLEEP);
     }
 
-    public static void printTape(TuringMachine<String> machine, int frames, int millis) throws InterruptedException {
+    private static void printTape(TuringMachine<String> machine, int frames, int millis) throws InterruptedException {
         for (int i = 0; i < frames; i++) {
             String[] split = machine.getTape().split("");
             if (i % 2 > 0) {
@@ -43,19 +70,24 @@ public class Main {
 //                split[lastPosition] = "\u001B[38;5;146m" + split[lastPosition] + "\u001B[0m";
 
 
-            int spaces = machine.getStates().stream().mapToInt(String::length).max(
-
-            ).orElseThrow(RuntimeException::new) - machine.getState().length();
-
-
-            String left = stringOf(spaces, " ") + machine.getState() + " ";
-            System.out.print("\r" + left);
-            System.out.print("" + String.join("", split));
+            System.out.print("\r" + formatState(machine) + String.join("", split));
             Thread.sleep(millis);
         }
     }
 
+    private static String formatState(TuringMachine<String> machine) {
+
+        int spaces = machine.getStates().stream().mapToInt(String::length).max(
+
+        ).orElse(machine.getState().length()) - machine.getState().length();
+
+        return stringOf(spaces, " ") + machine.getState() + " ";
+
+    }
+
     private static String stringOf(int length, String fill) {
+
+
         return IntStream.range(0, length).mapToObj((s) -> fill).collect(Collectors.joining());
     }
 
@@ -86,6 +118,10 @@ public class Main {
 
         private void raise(String message, Exception e) {
             throw new RuntimeException(message, e);
+        }
+
+        private String highlight(String message) {
+            return "\033[0;31m" + message + "\033[0;33m";
         }
 
         private void raise(String message) {
@@ -145,14 +181,15 @@ public class Main {
 
 
             Matcher matcher = Pattern.compile("^instrukcja:([^\n]*)", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CHARACTER_CLASS | Pattern.MULTILINE).matcher(input);
+
             if (!matcher.find()) {
                 warn("Config nie zawiera żadnych \"instrukcji\"");
 
                 return;
             }
 
+            matcher = Pattern.compile("([^\n]*):((?:[^:]*;)*)", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CHARACTER_CLASS).matcher(input.substring(matcher.end()));
 
-            matcher = Pattern.compile("([^\n]*):([\\s\\S]*?)(([^\n]*):([\\s\\S]*?))?$", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CHARACTER_CLASS).matcher(input.substring(matcher.end()));
 
             while (matcher.find()) {
 
@@ -161,7 +198,8 @@ public class Main {
                 String state = matcher.group(1).trim();
 
                 if (!config.getStates().contains(state)) {
-                    warn("Stan: \"" + state + "\" z \"instrukcji\" został automatycznie dodany do \"listy stanów\", gdyż nie znajdował się na \"liście stanów\"");
+                    String highlighted = highlight(state);
+                    warn("Stan: \"" + highlighted + "\" z \"instrukcji\": \"\n" + matcher.group().replaceAll(state, highlighted) + "\n\" został automatycznie dodany do \"listy stanów\", gdyż nie znajdował się na \"liście stanów\"");
                     config.getStates().add(state);
                 }
 
@@ -171,6 +209,7 @@ public class Main {
 //                if (split.length % 2 != 0) {
 //                    raise("Niepoprawny format \"instrukcji\": \"" + matcher.group(2).trim() + "\"");
 //                }
+
 
                 for (int i = 0; i < split.length; i += 2) {
 
@@ -185,23 +224,25 @@ public class Main {
                     }
 
 
-                    if (!config.getStates().contains(instruction[0])) {
-                        warn("Stan: \"" + instruction[0] + "\" z \"instrukcji\" został automatycznie dodany do \"listy stanów\", gdyż nie znajdował się na \"liście stanów\"");
+                    if (!config.getStates().contains(instruction[0].toString())) {
+                        warn("Stan: \"" + highlight(instruction[0].toString()) + "\" z \"instrukcji\": \"\n" + matcher.group().replaceAll(instruction[0].toString(), highlight(instruction[0].toString())) + "\n\" został automatycznie dodany do \"listy stanów\", gdyż nie znajdował się na \"liście stanów\"");
                         config.getStates().add(instruction[0].toString());
                     }
 
                     TuringMachine.Direction direction = TuringMachine.Direction.stay;
 
-                    if (Objects.equals(instruction[2], "r")) {
+                    if (Objects.equals(instruction[2].toString(), "r")) {
                         direction = TuringMachine.Direction.right;
-                    } else if (Objects.equals(instruction[2], "l")) {
+                    } else if (Objects.equals(instruction[2].toString(), "l")) {
                         direction = TuringMachine.Direction.left;
-                    } else if (!Objects.equals(instruction[2], "s")) {
+                    } else if (!Objects.equals(instruction[2].toString(), "s")) {
                         warn("Niepoprawny kierunek: \"" + instruction[2] + "\", zinterpretowano jako \"s\"");
                     }
 
 
                     config.addInstruction(getChar(instruction[1], "instrukcji"), instruction[0].toString(), state, direction, value);
+
+
                 }
 
 

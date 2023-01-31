@@ -1,0 +1,31 @@
+Opis: „sprawdzenie czy tyle samo zero co jedynek”
+stany: q1,q2,q3,q4,yes,no
+alfabet: 0,1,#,_
+długość słowa: 6
+słowo: 011000
+stan końcowy: yes,no
+stan początkowy: q1
+instrukcja:
+q1:
+    0;q3,_,r;
+    #;q1,#,r;
+    _;yes,_,l;
+    1;q2,_,r;
+
+q2:
+    #;q2,#,r;
+    1;q2,1,r;
+    0;q4,#,l;
+    _;no,_,l;
+
+q3:
+    #;q3,#,r;
+    0;q3,0,r;
+    1;q4,#,l;
+    _;no,_,l;
+
+q4:
+    #;q4,#,l;
+    0;q4,0,l;
+    1;q4,1,l;
+    _;q1,_,r;

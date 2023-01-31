@@ -1,0 +1,24 @@
+Opis: „dekrementacja”
+stany: q1,q2,q3,done
+alfabet: 0,1,_
+długość słowa: 6
+słowo: 011000
+stan końcowy: done
+stan początkowy: q1
+instrukcja:
+q1:
+    0;q1,0,r;
+    1;q1,1,r;
+    _;q2,_,l;
+
+q2:
+    0;q2,0,l;
+    1;q3,0,r;
+    _;done,_,l;
+
+q3:
+    0;q3,1,r;
+    1;done,1,l;
+    _;done,_,l;
+
+

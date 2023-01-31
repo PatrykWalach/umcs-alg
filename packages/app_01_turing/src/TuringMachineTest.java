@@ -3,85 +3,68 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashSet;
 
 
 class TuringMachineTest {
 
 
-    public static TuringMachine createBinaryDecrement(String input) {
-        HashSet<String> endStates = new HashSet<>();
-        endStates.add("done");
+    public static TuringMachine<String> createFromFile(String path, String input) throws IOException {
 
-        TuringMachine binaryDecrement = new TuringMachine("q1", '_', input, endStates);
-        binaryDecrement.addTransition("q1", '0', '0', "q1", TuringMachine.Direction.right);
-        binaryDecrement.addTransition("q1", '1', '1', "q1", TuringMachine.Direction.right);
-        binaryDecrement.addTransition("q1", '_', '_', "q2", TuringMachine.Direction.left);
 
-        binaryDecrement.addTransition("q2", '0', '0', "q2", TuringMachine.Direction.left);
-        binaryDecrement.addTransition("q2", '1', '0', "q3", TuringMachine.Direction.right);
-        binaryDecrement.addTransition("q2", '_', '_', "done", TuringMachine.Direction.left);
+        Main.Config config = new Main.Config();
+        new Main.ConfigDirector(config).buildConfig(String.join("\n", Files.readAllLines(Paths.get(path))));
 
-        binaryDecrement.addTransition("q3", '0', '1', "q3", TuringMachine.Direction.right);
-        binaryDecrement.addTransition("q3", '1', '1', "done", TuringMachine.Direction.left);
-        binaryDecrement.addTransition("q3", '_', '_', "done", TuringMachine.Direction.left);
 
-        return binaryDecrement;
-    }
+        TuringMachine<String> machine = new TuringMachine<>(config.getStartState(), config.getAlphabet().get(config.getAlphabet().size() - 1), input, new HashSet<>(config.getEndStates()));
 
-    public static TuringMachine createSameAmountOfZerosAndOnes(String input) {
-        HashSet<String> endStates = new HashSet<>();
-        endStates.add("yes");
-        endStates.add("no");
 
-        TuringMachine sameAmountOfZerosAndOnes = new TuringMachine("q1", '_', input, endStates);
-        sameAmountOfZerosAndOnes.addTransition("q1", '0', '_', "q3", TuringMachine.Direction.right);
-        sameAmountOfZerosAndOnes.addTransition("q1", '#', TuringMachine.Direction.right);
-        sameAmountOfZerosAndOnes.addTransition("q1", '_', '_', "yes", TuringMachine.Direction.left);
-        sameAmountOfZerosAndOnes.addTransition("q1", '1', '_', "q2", TuringMachine.Direction.right);
+        config.getInstructions().forEach((i) -> machine.addTransition(i.getState(), i.getValue(), i.getNextValue(), i.getNextState(), i.getDirection()));
 
-        sameAmountOfZerosAndOnes.addTransition("q2", '#', TuringMachine.Direction.right);
-        sameAmountOfZerosAndOnes.addTransition("q2", '1', TuringMachine.Direction.right);
-        sameAmountOfZerosAndOnes.addTransition("q2", '0', '#', "q4", TuringMachine.Direction.left);
-        sameAmountOfZerosAndOnes.addTransition("q2", '_', '_', "no", TuringMachine.Direction.left);
 
-        sameAmountOfZerosAndOnes.addTransition("q3", '#', TuringMachine.Direction.right);
-        sameAmountOfZerosAndOnes.addTransition("q3", '0', TuringMachine.Direction.right);
-        sameAmountOfZerosAndOnes.addTransition("q3", '1', '#', "q4", TuringMachine.Direction.left);
-        sameAmountOfZerosAndOnes.addTransition("q3", '_', '_', "no", TuringMachine.Direction.left);
-
-        sameAmountOfZerosAndOnes.addTransition("q4", '#', TuringMachine.Direction.left);
-        sameAmountOfZerosAndOnes.addTransition("q4", '0', TuringMachine.Direction.left);
-        sameAmountOfZerosAndOnes.addTransition("q4", '1', TuringMachine.Direction.left);
-        sameAmountOfZerosAndOnes.addTransition("q4", '_', '_', "q1", TuringMachine.Direction.right);
-
-        return sameAmountOfZerosAndOnes;
+        return machine;
     }
 
 
     @ParameterizedTest
-    @CsvSource(value = {"110,101_", "1,0_", "10,01_", "11,10_"})
-    public void binaryDecrement(String input, String output) {
-        TuringMachine binaryDecrement = createBinaryDecrement(input);
+    @CsvSource(value = {"110,101", "1,0", "10,01", "11,10"})
+    public void binaryDecrement(String input, String output) throws IOException {
+        TuringMachine<String> binaryDecrement = createFromFile("./src/decrement", input);
 
         while (!binaryDecrement.isDone()) {
             binaryDecrement.next();
         }
 
         Assertions.assertEquals("done", binaryDecrement.getState());
-        Assertions.assertEquals(output, binaryDecrement.getTape());
+        Assertions.assertEquals(output, binaryDecrement.getTape().replaceAll("_", ""));
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"110,111", "0,1", "1,10", "10,11", "11,100"})
+    public void binaryIncrement(String input, String output) throws IOException {
+        TuringMachine<String> binaryDecrement = createFromFile("./src/increment", input);
+
+        while (!binaryDecrement.isDone()) {
+            binaryDecrement.next();
+        }
+
+        Assertions.assertEquals("done", binaryDecrement.getState());
+        Assertions.assertEquals(output, binaryDecrement.getTape().replaceAll("_", ""));
     }
 
     @ParameterizedTest
     @CsvSource(value = {"1100,yes", "1001,yes", "10,yes", "11,no", "'',yes", "_,yes", "1,no", "0,no"})
-    public void sameAmountOfZerosAndOnes(String input, String qk) {
-        TuringMachine machine = createSameAmountOfZerosAndOnes(input);
+    public void sameAmountOfZerosAndOnes(String input, String qk) throws IOException {
+        TuringMachine<String> machine = createFromFile("./src/pairs", input);
 
         while (!machine.isDone()) {
             machine.next();
         }
 
-        Assertions.assertEquals(qk, machine.getState());
+        Assertions.assertEquals(qk, machine.getState().replaceAll("_", ""));
     }
 
     @Test
@@ -98,8 +81,8 @@ class TuringMachineTest {
                 "instrukcja:\n" +
                 "0:\n" +
                 "1;0,1,r;\n" +
-                "0;0,\\,,r;\n" +
-                "_;k,_,s;\n");
+                "1:\n" +
+                "0;0,\\,,r;\n");
 
 
         Assertions.assertEquals("„negacja”", config.getDescription());
@@ -115,17 +98,12 @@ class TuringMachineTest {
         Assertions.assertEquals('1', config.getInstructions().get(0).getNextValue());
         Assertions.assertEquals(TuringMachine.Direction.right, config.getInstructions().get(0).getDirection());
 
-        Assertions.assertEquals("0", config.getInstructions().get(1).getState());
+        Assertions.assertEquals("1", config.getInstructions().get(1).getState());
         Assertions.assertEquals('0', config.getInstructions().get(1).getValue());
         Assertions.assertEquals("0", config.getInstructions().get(1).getNextState());
         Assertions.assertEquals(',', config.getInstructions().get(1).getNextValue());
         Assertions.assertEquals(TuringMachine.Direction.right, config.getInstructions().get(1).getDirection());
 
-        Assertions.assertEquals("0", config.getInstructions().get(2).getState());
-        Assertions.assertEquals('_', config.getInstructions().get(2).getValue());
-        Assertions.assertEquals("k", config.getInstructions().get(2).getNextState());
-        Assertions.assertEquals('_', config.getInstructions().get(2).getNextValue());
-        Assertions.assertEquals(TuringMachine.Direction.stay, config.getInstructions().get(2).getDirection());
     }
 
     @Test
@@ -173,7 +151,7 @@ class TuringMachineTest {
     public void configDirectorAlfabet() {
         Main.Config config = new Main.Config();
 
-        new Main.ConfigDirector(config).buildConfig("alfabet: 0, ,:,\"\n" + "Opis: „negacja”\n" +
+        new Main.ConfigDirector(config).buildConfig("alfabet: 0,1,_, ,:,\"\n" + "Opis: „negacja”\n" +
                 "stany: 0,k\n" +
 
                 "długość słowa: 6\n" +
@@ -187,7 +165,7 @@ class TuringMachineTest {
                 "_;k,_,s;\n");
 
 
-        Assertions.assertArrayEquals(new Character[]{'0', ' ', ':', '\"'}, config.getAlphabet().toArray());
+        Assertions.assertArrayEquals(new Character[]{'0', '1', '_', ' ', ':', '\"'}, config.getAlphabet().toArray());
     }
 
     @Test
